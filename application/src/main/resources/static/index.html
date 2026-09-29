@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housing Society Billing Portal</title>
+    <meta name="description" content="Manage residents and monthly bills for your housing society from one place.">
+
+    <style>
+        /* ── Reset & base ─────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        /* ── Header (unchanged colours) ──────────────────── */
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .header h1 { margin: 0; font-size: 1.5rem; }
+        .header p  { margin: 4px 0 0; font-size: 0.9rem; opacity: 0.8; }
+
+        .header-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        /* ── Buttons ──────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-primary   { background: #2563eb; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+
+        .btn-success   { background: #16a34a; color: white; }
+        .btn-success:hover:not(:disabled) { background: #15803d; }
+
+        .btn-secondary { background: #e5e7eb; color: #374151; }
+        .btn-secondary:hover:not(:disabled) { background: #d1d5db; }
+
+        .btn-pay {
+            padding: 5px 11px;
+            font-size: 0.78rem;
+            background: #0ea5e9;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.15s;
+        }
+        .btn-pay:hover { background: #0284c7; }
+
+        .btn-delete {
+            padding: 5px 11px;
+            font-size: 0.78rem;
+            background: #ef4444;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.15s;
+            margin-left: 6px;
+        }
+        .btn-delete:hover { background: #dc2626; }
+
+        /* ── Container ────────────────────────────────────── */
+        .container { padding: 30px 40px; }
+
+        /* ── Summary cards (unchanged layout) ────────────── */
+        .cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 160px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card h3 { margin-top: 0; color: #555; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .card p  { font-size: 28px; font-weight: bold; margin-bottom: 0; color: #1f2937; }
+
+        /* ── Section panels (unchanged) ──────────────────── */
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .section-header h2 { margin: 0; font-size: 1.15rem; color: #1f2937; }
+
+        /* ── Tables (unchanged) ───────────────────────────── */
+        table { width: 100%; border-collapse: collapse; }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+
+        th { background: #f1f3f5; font-weight: 600; color: #374151; }
+
+        tr:last-child td { border-bottom: none; }
+
+        .paid   { color: #16a34a; font-weight: bold; }
+        .unpaid { color: #dc2626; font-weight: bold; }
+
+        .empty-row td { text-align: center; color: #9ca3af; padding: 24px; }
+
+        /* ── Toast notifications ──────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            padding: 14px 22px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 9999;
+            max-width: 340px;
+        }
+        #toast.show { opacity: 1; }
+        #toast.success { background: #16a34a; }
+        #toast.error   { background: #dc2626; }
+
+        /* ── Modal overlay ────────────────────────────────── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+
+        /* ── Modal box ────────────────────────────────────── */
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-16px); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
+
+        .modal h2 {
+            margin: 0 0 20px;
+            font-size: 1.2rem;
+            color: #1f2937;
+        }
+
+        /* ── Form elements ────────────────────────────────── */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .form-group input:focus { border-color: #2563eb; }
+
+        .form-group input.invalid { border-color: #dc2626; }
+
+        .field-error {
+            font-size: 0.78rem;
+            color: #dc2626;
+            margin-top: 3px;
+            display: none;
+        }
+
+        .form-group.has-error .field-error { display: block; }
+        .form-group.has-error input { border-color: #dc2626; }
+
+        /* ── Modal footer ─────────────────────────────────── */
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        /* ── Responsive ───────────────────────────────────── */
+        @media (max-width: 640px) {
+            .container { padding: 20px 16px; }
+            .header    { padding: 16px; }
+            .cards     { flex-direction: column; }
+            th, td     { padding: 8px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════ -->
+<div class="header">
+    <div>
+        <h1>🏠 Housing Society Billing Portal</h1>
+        <p>Society billing and resident management system</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-primary" id="openResidentModal">+ Add Resident</button>
+        <button class="btn btn-success" id="openBillModal">+ Add Bill</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MAIN CONTAINER
+══════════════════════════════════════════════════════════ -->
+<div class="container">
+
+    <!-- Summary cards (unchanged from original) -->
+    <div class="cards">
+        <div class="card">
+            <h3>Total Residents</h3>
+            <p id="residentCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Total Bills</h3>
+            <p id="billCount">0</p>
+        </div>
+        <div class="card">
+            <h3>Total Amount</h3>
+            <p id="totalAmount">₹0</p>
+        </div>
+    </div>
+
+    <!-- Residents section -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Residents</h2>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Flat</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="residentTable"></tbody>
+        </table>
+    </div>
+
+    <!-- Bills section -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Bills</h2>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Resident ID</th>
+                    <th>Month</th>
+                    <th>Maintenance</th>
+                    <th>Electricity</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="billTable"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL — ADD RESIDENT
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="residentModal" role="dialog" aria-modal="true" aria-labelledby="residentModalTitle">
+    <div class="modal">
+        <h2 id="residentModalTitle">Add New Resident</h2>
+
+        <form id="residentForm" novalidate>
+
+            <div class="form-group" id="fg-name">
+                <label for="residentName">Full Name <span style="color:#dc2626">*</span></label>
+                <input type="text" id="residentName" placeholder="e.g. Priya Sharma" maxlength="100">
+                <div class="field-error" id="err-residentName">Name is required.</div>
+            </div>
+
+            <div class="form-group" id="fg-flat">
+                <label for="residentFlat">Flat Number <span style="color:#dc2626">*</span></label>
+                <input type="text" id="residentFlat" placeholder="e.g. A-101" maxlength="20">
+                <div class="field-error" id="err-residentFlat">Flat number is required.</div>
+            </div>
+
+            <div class="form-group" id="fg-phone">
+                <label for="residentPhone">Phone <span style="color:#dc2626">*</span></label>
+                <input type="tel" id="residentPhone" placeholder="e.g. 9876543210" maxlength="15">
+                <div class="field-error" id="err-residentPhone">Phone number is required.</div>
+            </div>
+
+            <div class="form-group" id="fg-email">
+                <label for="residentEmail">Email <span style="color:#dc2626">*</span></label>
+                <input type="email" id="residentEmail" placeholder="e.g. priya@email.com" maxlength="100">
+                <div class="field-error" id="err-residentEmail">A valid email address is required.</div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelResidentModal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="submitResidentBtn">Save Resident</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL — ADD BILL
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="billModal" role="dialog" aria-modal="true" aria-labelledby="billModalTitle">
+    <div class="modal">
+        <h2 id="billModalTitle">Add New Bill</h2>
+
+        <form id="billForm" novalidate>
+
+            <div class="form-group" id="fg-billResidentId">
+                <label for="billResidentId">Resident ID <span style="color:#dc2626">*</span></label>
+                <input type="number" id="billResidentId" placeholder="e.g. 1" min="1">
+                <div class="field-error" id="err-billResidentId">Resident ID is required and must be a positive number.</div>
+            </div>
+
+            <div class="form-group" id="fg-billMonth">
+                <label for="billMonth">Bill Month <span style="color:#dc2626">*</span></label>
+                <input type="text" id="billMonth" placeholder="e.g. September 2026" maxlength="30">
+                <div class="field-error" id="err-billMonth">Bill month is required.</div>
+            </div>
+
+            <div class="form-group" id="fg-maintenanceAmount">
+                <label for="maintenanceAmount">Maintenance Amount (₹) <span style="color:#dc2626">*</span></label>
+                <input type="number" id="maintenanceAmount" placeholder="e.g. 2500" min="0" step="0.01">
+                <div class="field-error" id="err-maintenanceAmount">Enter a valid maintenance amount (0 or more).</div>
+            </div>
+
+            <div class="form-group" id="fg-electricityAmount">
+                <label for="electricityAmount">Electricity Amount (₹) <span style="color:#dc2626">*</span></label>
+                <input type="number" id="electricityAmount" placeholder="e.g. 800" min="0" step="0.01">
+                <div class="field-error" id="err-electricityAmount">Enter a valid electricity amount (0 or more).</div>
+            </div>
+
+            <p style="font-size:0.8rem;color:#6b7280;margin:0 0 4px;">
+                Total amount and payment status will be calculated automatically by the server.
+            </p>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelBillModal">Cancel</button>
+                <button type="submit" class="btn btn-success" id="submitBillBtn">Save Bill</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TOAST
+══════════════════════════════════════════════════════════ -->
+<div id="toast" role="alert" aria-live="assertive"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════ -->
+<script>
+
+    /* ─── Toast helper ───────────────────────────────────── */
+    let _toastTimer = null;
+
+    function showToast(message, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'show ' + (type || 'success');
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => { toast.className = ''; }, 3500);
+    }
+
+    /* ─── Modal helpers ──────────────────────────────────── */
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    // Close modal when clicking the dark overlay (outside the box)
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === this) closeModal(this.id);
+        });
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.open').forEach(m => {
+                closeModal(m.id);
+            });
+        }
+    });
+
+    /* ─── Field validation helpers ───────────────────────── */
+    function setFieldError(groupId, hasError) {
+        const group = document.getElementById(groupId);
+        if (hasError) {
+            group.classList.add('has-error');
+        } else {
+            group.classList.remove('has-error');
+        }
+    }
+
+    function clearFormErrors(formId) {
+        document.querySelectorAll('#' + formId + ' .form-group').forEach(g => {
+            g.classList.remove('has-error');
+        });
+    }
+
+    /* ─── Validate Resident form ─────────────────────────── */
+    function validateResidentForm() {
+        const name  = document.getElementById('residentName').value.trim();
+        const flat  = document.getElementById('residentFlat').value.trim();
+        const phone = document.getElementById('residentPhone').value.trim();
+        const email = document.getElementById('residentEmail').value.trim();
+
+        let valid = true;
+
+        setFieldError('fg-name',  !name);
+        setFieldError('fg-flat',  !flat);
+        setFieldError('fg-phone', !phone);
+
+        const emailOk = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        setFieldError('fg-email', !emailOk);
+
+        if (!name || !flat || !phone || !emailOk) valid = false;
+        return valid;
+    }
+
+    /* ─── Validate Bill form ─────────────────────────────── */
+    function validateBillForm() {
+        const residentId    = document.getElementById('billResidentId').value.trim();
+        const billMonth     = document.getElementById('billMonth').value.trim();
+        const maintenance   = document.getElementById('maintenanceAmount').value.trim();
+        const electricity   = document.getElementById('electricityAmount').value.trim();
+
+        const residentIdOk  = residentId && parseInt(residentId) > 0;
+        const maintenanceOk = maintenance !== '' && parseFloat(maintenance) >= 0;
+        const electricityOk = electricity !== '' && parseFloat(electricity) >= 0;
+
+        setFieldError('fg-billResidentId',    !residentIdOk);
+        setFieldError('fg-billMonth',         !billMonth);
+        setFieldError('fg-maintenanceAmount', !maintenanceOk);
+        setFieldError('fg-electricityAmount', !electricityOk);
+
+        return residentIdOk && billMonth && maintenanceOk && electricityOk;
+    }
+
+    /* ─── Load Residents ──────────────────────────────────── */
+    async function loadResidents() {
+        const table = document.getElementById('residentTable');
+        try {
+            const response = await fetch('/residents');
+            if (!response.ok) throw new Error('Server returned ' + response.status);
+
+            const residents = await response.json();
+            document.getElementById('residentCount').innerText = residents.length;
+
+            table.innerHTML = '';
+
+            if (residents.length === 0) {
+                table.innerHTML = '<tr class="empty-row"><td colspan="6">No residents registered yet.</td></tr>';
+                return;
+            }
+
+            residents.forEach(resident => {
+                const tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + escHtml(String(resident.id))         + '</td>' +
+                    '<td>' + escHtml(resident.name)               + '</td>' +
+                    '<td>' + escHtml(resident.flatNumber)         + '</td>' +
+                    '<td>' + escHtml(resident.phone)              + '</td>' +
+                    '<td>' + escHtml(resident.email)              + '</td>' +
+                    '<td><button class="btn-delete" onclick="deleteResident(' + resident.id + ')">Delete</button></td>';
+                table.appendChild(tr);
+            });
+
+        } catch (err) {
+            console.error('Failed to load residents:', err);
+            table.innerHTML = '<tr class="empty-row"><td colspan="6" style="color:#dc2626;">Failed to load residents. Is the server running?</td></tr>';
+        }
+    }
+
+    /* ─── Load Bills ───────────────────────────────────────── */
+    async function loadBills() {
+        const table = document.getElementById('billTable');
+        try {
+            const response = await fetch('/bills');
+            if (!response.ok) throw new Error('Server returned ' + response.status);
+
+            const bills = await response.json();
+            document.getElementById('billCount').innerText = bills.length;
+
+            table.innerHTML = '';
+
+            let total = 0;
+
+            if (bills.length === 0) {
+                table.innerHTML = '<tr class="empty-row"><td colspan="9">No bills generated yet.</td></tr>';
+                document.getElementById('totalAmount').innerText = '₹0';
+                return;
+            }
+
+            bills.forEach(bill => {
+                total += bill.totalAmount || 0;
+
+                const isPaid       = bill.status === 'PAID';
+                const statusClass  = isPaid ? 'paid' : 'unpaid';
+                const payBtn       = isPaid
+                    ? ''
+                    : '<button class="btn-pay" onclick="markAsPaid(' + bill.id + ')">Mark as Paid</button>';
+                const deleteBtn    = '<button class="btn-delete" onclick="deleteBill(' + bill.id + ')">Delete</button>';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td>' + escHtml(String(bill.id))                          + '</td>' +
+                    '<td>' + escHtml(String(bill.residentId))                  + '</td>' +
+                    '<td>' + escHtml(bill.billMonth)                           + '</td>' +
+                    '<td>₹' + escHtml(String(bill.maintenanceAmount))          + '</td>' +
+                    '<td>₹' + escHtml(String(bill.electricityAmount))          + '</td>' +
+                    '<td>₹' + escHtml(String(bill.totalAmount))                + '</td>' +
+                    '<td class="' + statusClass + '">' + escHtml(bill.status) + '</td>' +
+                    '<td>' + payBtn + deleteBtn                                + '</td>';
+                table.appendChild(tr);
+            });
+
+            document.getElementById('totalAmount').innerText = '₹' + total.toFixed(2);
+
+        } catch (err) {
+            console.error('Failed to load bills:', err);
+            table.innerHTML = '<tr class="empty-row"><td colspan="9" style="color:#dc2626;">Failed to load bills. Is the server running?</td></tr>';
+        }
+    }
+
+    /* ─── Mark bill as Paid ───────────────────────────────── */
+    async function markAsPaid(billId) {
+        try {
+            const response = await fetch('/bills/' + billId + '/pay', { method: 'PUT' });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Server returned ' + response.status);
+            }
+
+            showToast('Bill #' + billId + ' marked as PAID.', 'success');
+            await loadBills();
+
+        } catch (err) {
+            console.error('Failed to mark bill as paid:', err);
+            showToast('Failed to mark bill as paid: ' + err.message, 'error');
+        }
+    }
+
+    /* ─── Delete Resident ────────────────────────────────── */
+    async function deleteResident(residentId) {
+        if (!confirm('Delete this resident? This cannot be undone.')) return;
+        try {
+            const response = await fetch('/residents/' + residentId, { method: 'DELETE' });
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Server returned ' + response.status);
+            }
+            showToast('Resident #' + residentId + ' deleted.', 'success');
+            await loadResidents();
+        } catch (err) {
+            console.error('Failed to delete resident:', err);
+            showToast('Failed to delete resident: ' + err.message, 'error');
+        }
+    }
+
+    /* ─── Delete Bill ─────────────────────────────────────── */
+    async function deleteBill(billId) {
+        if (!confirm('Delete this bill? This cannot be undone.')) return;
+        try {
+            const response = await fetch('/bills/' + billId, { method: 'DELETE' });
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Server returned ' + response.status);
+            }
+            showToast('Bill #' + billId + ' deleted.', 'success');
+            await loadBills();
+        } catch (err) {
+            console.error('Failed to delete bill:', err);
+            showToast('Failed to delete bill: ' + err.message, 'error');
+        }
+    }
+
+    /* ─── Submit Add Resident form ────────────────────────── */
+    document.getElementById('residentForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        clearFormErrors('residentForm');
+
+        if (!validateResidentForm()) return;
+
+        const btn = document.getElementById('submitResidentBtn');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const payload = {
+            name:       document.getElementById('residentName').value.trim(),
+            flatNumber: document.getElementById('residentFlat').value.trim(),
+            phone:      document.getElementById('residentPhone').value.trim(),
+            email:      document.getElementById('residentEmail').value.trim()
+        };
+
+        try {
+            const response = await fetch('/residents', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Server returned ' + response.status);
+            }
+
+            const created = await response.json();
+            showToast('Resident "' + created.name + '" added successfully.', 'success');
+            closeModal('residentModal');
+            this.reset();
+            await loadResidents();
+
+        } catch (err) {
+            console.error('Failed to add resident:', err);
+            showToast('Failed to add resident: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Resident';
+        }
+    });
+
+    /* ─── Submit Add Bill form ────────────────────────────── */
+    document.getElementById('billForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        clearFormErrors('billForm');
+
+        if (!validateBillForm()) return;
+
+        const btn = document.getElementById('submitBillBtn');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        const payload = {
+            residentId:          parseInt(document.getElementById('billResidentId').value.trim()),
+            billMonth:           document.getElementById('billMonth').value.trim(),
+            maintenanceAmount:   parseFloat(document.getElementById('maintenanceAmount').value.trim()),
+            electricityAmount:   parseFloat(document.getElementById('electricityAmount').value.trim())
+            // totalAmount and status are intentionally omitted — backend calculates them
+        };
+
+        try {
+            const response = await fetch('/bills', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Server returned ' + response.status);
+            }
+
+            const created = await response.json();
+            showToast(
+                'Bill for Resident #' + created.residentId +
+                ' (' + created.billMonth + ') added. Total: ₹' + created.totalAmount,
+                'success'
+            );
+            closeModal('billModal');
+            this.reset();
+            await loadBills();
+
+        } catch (err) {
+            console.error('Failed to add bill:', err);
+            showToast('Failed to add bill: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Bill';
+        }
+    });
+
+    /* ─── Modal open/close button wiring ──────────────────── */
+    document.getElementById('openResidentModal').addEventListener('click', function () {
+        document.getElementById('residentForm').reset();
+        clearFormErrors('residentForm');
+        openModal('residentModal');
+        document.getElementById('residentName').focus();
+    });
+
+    document.getElementById('cancelResidentModal').addEventListener('click', function () {
+        closeModal('residentModal');
+    });
+
+    document.getElementById('openBillModal').addEventListener('click', function () {
+        document.getElementById('billForm').reset();
+        clearFormErrors('billForm');
+        openModal('billModal');
+        document.getElementById('billResidentId').focus();
+    });
+
+    document.getElementById('cancelBillModal').addEventListener('click', function () {
+        closeModal('billModal');
+    });
+
+    /* ─── XSS guard: escape HTML in dynamic content ────────── */
+    function escHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /* ─── Initial data load ────────────────────────────────── */
+    loadResidents();
+    loadBills();
+
+</script>
+
+</body>
+</html>
