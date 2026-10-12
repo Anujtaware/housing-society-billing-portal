@@ -18,6 +18,7 @@ public class Bill {
     private Double electricityAmount;
     private Double totalAmount;
     private String status;
+    private String paymentDate;
 
     public Bill() {
     }
@@ -72,5 +73,13 @@ public class Bill {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPaymentDate() {
+        return paymentDate;
+    }
+
+    public void setPaymentDate(String paymentDate) {
+        this.paymentDate = paymentDate;
     }
 }

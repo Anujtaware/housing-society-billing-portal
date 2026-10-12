@@ -247,11 +247,198 @@
         }
 
         /* ── Responsive ───────────────────────────────────── */
-        @media (max-width: 640px) {
-            .container { padding: 20px 16px; }
-            .header    { padding: 16px; }
-            .cards     { flex-direction: column; }
-            th, td     { padding: 8px; font-size: 0.8rem; }
+        /* ── Receipt Button & Modal ───────────────────────── */
+        .btn-receipt {
+            padding: 5px 11px;
+            font-size: 0.78rem;
+            background: #4f46e5;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.15s;
+            margin-left: 6px;
+        }
+        .btn-receipt:hover { background: #4338ca; }
+
+        .btn-receipt-unpaid {
+            background: #d97706;
+        }
+        .btn-receipt-unpaid:hover {
+            background: #b45309;
+        }
+
+        .receipt-modal {
+            max-width: 580px;
+            padding: 30px;
+            font-size: 0.9rem;
+        }
+
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .receipt-society h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #111827;
+        }
+
+        .receipt-society p {
+            margin: 4px 0 0;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .receipt-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .receipt-badge.paid {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+        }
+
+        .receipt-badge.unpaid {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+
+        .receipt-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 14px 0;
+        }
+
+        .receipt-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            background: #f9fafb;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            border: 1px solid #f3f4f6;
+        }
+
+        .receipt-section-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #4b5563;
+            margin: 16px 0 8px;
+        }
+
+        .receipt-resident-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .receipt-table th {
+            background: #f3f4f6;
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            color: #374151;
+            text-align: left;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .receipt-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 0.85rem;
+        }
+
+        .receipt-total-row td {
+            border-top: 2px solid #e5e7eb;
+            border-bottom: 2px solid #e5e7eb;
+            background: #f9fafb;
+            font-size: 0.95rem;
+        }
+
+        .receipt-notice {
+            margin-top: 14px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+        }
+
+        .receipt-notice.paid {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .receipt-notice.unpaid {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
+        .receipt-fineprint {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin: 16px 0 14px;
+            text-align: center;
+        }
+
+        .receipt-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media print {
+            body {
+                background: white !important;
+            }
+            .header, .container, #toast, .modal-overlay:not(#receiptModal) {
+                display: none !important;
+            }
+            #receiptModal {
+                display: block !important;
+                position: static !important;
+                background: none !important;
+                padding: 0 !important;
+            }
+            .receipt-modal {
+                box-shadow: none !important;
+                border: 1px solid #333 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                animation: none !important;
+                padding: 24px !important;
+            }
+            .no-print {
+                display: none !important;
+            }
         }
     </style>
 </head>
@@ -426,6 +613,73 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
+     MODAL — BILL RECEIPT
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle">
+    <div class="modal receipt-modal">
+        <div class="receipt-header">
+            <div class="receipt-society">
+                <h2 id="receiptModalTitle">🏢 Housing Society Billing Portal</h2>
+                <p>Official Maintenance & Utility Receipt</p>
+            </div>
+            <div id="receiptStatusBadge" class="receipt-badge paid">PAID</div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-grid">
+            <div><strong>Receipt No:</strong> <span id="rReceiptNo">-</span></div>
+            <div><strong>Issued Date:</strong> <span id="rIssuedAt">-</span></div>
+            <div><strong>Bill Month:</strong> <span id="rBillMonth">-</span></div>
+            <div><strong>Payment Date:</strong> <span id="rPayDate">-</span></div>
+        </div>
+
+        <div class="receipt-section-title">Resident Information</div>
+        <div class="receipt-resident-card">
+            <div><strong>Resident Name:</strong> <span id="rResidentName">-</span></div>
+            <div><strong>Flat Number:</strong> <span id="rFlatNumber">-</span></div>
+            <div><strong>Contact Phone:</strong> <span id="rPhone">-</span></div>
+            <div><strong>Email:</strong> <span id="rEmail">-</span></div>
+        </div>
+
+        <div class="receipt-section-title">Billing Charges Breakdown</div>
+        <table class="receipt-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th style="text-align:right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Monthly Society Maintenance Charge</td>
+                    <td style="text-align:right;" id="rMaintenance">₹0.00</td>
+                </tr>
+                <tr>
+                    <td>Electricity & Common Utility Charge</td>
+                    <td style="text-align:right;" id="rElectricity">₹0.00</td>
+                </tr>
+                <tr class="receipt-total-row">
+                    <td><strong>Total Amount</strong></td>
+                    <td style="text-align:right;"><strong id="rTotal">₹0.00</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div id="receiptNotice" class="receipt-notice paid"></div>
+
+        <div class="receipt-footer">
+            <p class="receipt-fineprint">Computer-generated receipt from the Housing Society Billing Portal. Valid without physical signature.</p>
+            <div class="receipt-actions no-print">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('receiptModal')">Close</button>
+                <button type="button" class="btn btn-primary" id="printReceiptBtn" onclick="printReceipt()">🖨️ Print / Save as PDF</button>
+                <button type="button" class="btn btn-success" id="downloadReceiptBtn" onclick="downloadReceiptFile()">💾 Download (.txt)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
      TOAST
 ══════════════════════════════════════════════════════════ -->
 <div id="toast" role="alert" aria-live="assertive"></div>
@@ -589,6 +843,9 @@
                 const payBtn       = isPaid
                     ? ''
                     : '<button class="btn-pay" onclick="markAsPaid(' + bill.id + ')">Mark as Paid</button>';
+                const receiptBtn   = isPaid
+                    ? '<button class="btn-receipt" onclick="viewReceipt(' + bill.id + ')">📄 Receipt</button>'
+                    : '<button class="btn-receipt btn-receipt-unpaid" onclick="viewReceipt(' + bill.id + ')" title="Unpaid: View billing statement or settle payment">📄 Receipt (Unpaid)</button>';
                 const deleteBtn    = '<button class="btn-delete" onclick="deleteBill(' + bill.id + ')">Delete</button>';
 
                 const tr = document.createElement('tr');
@@ -600,7 +857,7 @@
                     '<td>₹' + escHtml(String(bill.electricityAmount))          + '</td>' +
                     '<td>₹' + escHtml(String(bill.totalAmount))                + '</td>' +
                     '<td class="' + statusClass + '">' + escHtml(bill.status) + '</td>' +
-                    '<td>' + payBtn + deleteBtn                                + '</td>';
+                    '<td>' + payBtn + receiptBtn + deleteBtn                    + '</td>';
                 table.appendChild(tr);
             });
 
@@ -610,6 +867,119 @@
             console.error('Failed to load bills:', err);
             table.innerHTML = '<tr class="empty-row"><td colspan="9" style="color:#dc2626;">Failed to load bills. Is the server running?</td></tr>';
         }
+    }
+
+    /* ─── Receipt management ─────────────────────────────── */
+    let currentReceipt = null;
+
+    async function viewReceipt(billId) {
+        try {
+            const response = await fetch('/bills/' + billId + '/receipt');
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Failed to fetch receipt');
+            }
+
+            const data = await response.json();
+            currentReceipt = data;
+
+            document.getElementById('rReceiptNo').innerText    = data.receiptNumber || ('REC-' + data.billId);
+            document.getElementById('rIssuedAt').innerText     = data.issuedAt || '-';
+            document.getElementById('rBillMonth').innerText    = data.billMonth || '-';
+            document.getElementById('rPayDate').innerText      = data.paymentDate || '-';
+
+            document.getElementById('rResidentName').innerText = data.residentName || '-';
+            document.getElementById('rFlatNumber').innerText   = data.flatNumber || '-';
+            document.getElementById('rPhone').innerText        = data.phone || '-';
+            document.getElementById('rEmail').innerText        = data.email || '-';
+
+            document.getElementById('rMaintenance').innerText  = '₹' + (data.maintenanceAmount != null ? data.maintenanceAmount.toFixed(2) : '0.00');
+            document.getElementById('rElectricity').innerText  = '₹' + (data.electricityAmount != null ? data.electricityAmount.toFixed(2) : '0.00');
+            document.getElementById('rTotal').innerText        = '₹' + (data.totalAmount != null ? data.totalAmount.toFixed(2) : '0.00');
+
+            const isPaid = (data.status === 'PAID');
+            const badge = document.getElementById('receiptStatusBadge');
+            badge.innerText = data.status || 'UNPAID';
+            badge.className = 'receipt-badge ' + (isPaid ? 'paid' : 'unpaid');
+
+            const notice = document.getElementById('receiptNotice');
+            if (isPaid) {
+                notice.className = 'receipt-notice paid';
+                notice.innerHTML = '✅ <strong>Payment Confirmed:</strong> Sincere thanks for your timely payment! This document acts as your official payment receipt.';
+            } else {
+                notice.className = 'receipt-notice unpaid';
+                notice.innerHTML = '⚠️ <strong>Payment Required:</strong> This bill is currently UNPAID. Settle payment before an official stamped receipt can be issued.<br>' +
+                    '<button class="btn btn-primary" style="margin-top:8px;padding:6px 12px;font-size:0.8rem;" onclick="payFromReceipt(' + data.billId + ')">💳 Settle Payment Now</button>';
+            }
+
+            openModal('receiptModal');
+
+        } catch (err) {
+            console.error('Failed to view receipt:', err);
+            showToast('Failed to load receipt: ' + err.message, 'error');
+        }
+    }
+
+    async function payFromReceipt(billId) {
+        closeModal('receiptModal');
+        await markAsPaid(billId);
+        await viewReceipt(billId);
+    }
+
+    function printReceipt() {
+        window.print();
+    }
+
+    function downloadReceiptFile() {
+        if (!currentReceipt) {
+            showToast('No active receipt found to download.', 'error');
+            return;
+        }
+
+        const r = currentReceipt;
+        const separator = '='.repeat(64);
+        const divider   = '-'.repeat(64);
+
+        const content =
+separator + '\n' +
+'               HOUSING SOCIETY BILLING PORTAL\n' +
+'           OFFICIAL MAINTENANCE & UTILITY RECEIPT\n' +
+separator + '\n' +
+'Receipt Number : ' + r.receiptNumber + '\n' +
+'Issue Timestamp: ' + r.issuedAt + '\n' +
+'Billing Month  : ' + r.billMonth + '\n' +
+'Payment Status : ' + r.status + '\n' +
+'Payment Date   : ' + r.paymentDate + '\n' +
+divider + '\n' +
+'RESIDENT INFORMATION:\n' +
+'Resident Name  : ' + r.residentName + '\n' +
+'Flat Number    : ' + r.flatNumber + '\n' +
+'Phone Number   : ' + r.phone + '\n' +
+'Email Address  : ' + r.email + '\n' +
+divider + '\n' +
+'CHARGES BREAKDOWN:\n' +
+'1. Monthly Maintenance Fee      : Rs. ' + (r.maintenanceAmount != null ? r.maintenanceAmount.toFixed(2) : '0.00') + '\n' +
+'2. Electricity & Common Utility: Rs. ' + (r.electricityAmount != null ? r.electricityAmount.toFixed(2) : '0.00') + '\n' +
+divider + '\n' +
+'TOTAL AMOUNT                   : Rs. ' + (r.totalAmount != null ? r.totalAmount.toFixed(2) : '0.00') + '\n' +
+divider + '\n' +
+(r.status === 'PAID'
+    ? 'Status: PAID - Thank you for your payment!\n'
+    : 'Status: UNPAID - Payment is required immediately.\n') +
+'Note: This is a computer-generated receipt from the Housing\n' +
+'Society Billing Portal. Valid without physical signature.\n' +
+separator + '\n';
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Receipt_Bill_' + r.billId + '_' + (r.status || 'UNPAID') + '.txt';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast('Receipt downloaded successfully.', 'success');
     }
 
     /* ─── Mark bill as Paid ───────────────────────────────── */
