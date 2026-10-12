@@ -1,38 +1,51 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('* * * * *')
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out Housing Society Billing Portal'
+                echo '=== Stage 1: Checkout Housing Society Billing Portal ==='
+                checkout scm
             }
         }
 
         stage('Build') {
             steps {
-                echo 'Building Housing Society Billing Portal'
+                echo '=== Stage 2: Clean & Compile Maven Project ==='
+                bat 'mvn clean compile -f application/pom.xml'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Running tests'
+                echo '=== Stage 3: Run Automated Test Suite ==='
+                bat 'mvn test -f application/pom.xml'
             }
         }
 
-        stage('Deploy') {
+        stage('Package') {
             steps {
-                echo 'Deployment stage completed'
+                echo '=== Stage 4: Package Spring Boot Executable JAR ==='
+                bat 'mvn package -DskipTests=true -f application/pom.xml'
             }
         }
     }
 
     post {
+        always {
+            echo '=== Stage 5: Archive Build Artifact & Test Reports ==='
+            archiveArtifacts artifacts: 'application/target/*.jar', fingerprint: true, allowEmptyArchive: false
+            junit testResults: 'application/target/surefire-reports/*.xml', allowEmptyResults: true
+        }
         success {
-            echo 'Pipeline completed successfully!'
+            echo '✅ Continuous Integration Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo '❌ Continuous Integration Pipeline failed!'
         }
     }
 }
