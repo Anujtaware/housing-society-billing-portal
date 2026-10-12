@@ -119,8 +119,8 @@ public class SeleniumE2ETests {
     public void testDashboardLoadsSuccessfully() {
         driver.get(baseUrl);
 
-        // 1. Verify Page Title
-        assertEquals("Housing Society Billing Portal", driver.getTitle(), "Page title should match");
+        // 1. Verify Page Title (Deliberate test failure for Week 10 verification)
+        assertEquals("DELIBERATE_TEST_FAILURE_INTENTIONAL_INCORRECT_TITLE", driver.getTitle(), "Deliberate test failure for Week 10 CI demonstration");
 
         // 2. Verify Header H1
         WebElement headerH1 = wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("h1")));
