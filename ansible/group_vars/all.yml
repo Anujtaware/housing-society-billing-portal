@@ -37,7 +37,7 @@ docker_container_port: 8080
 # Database Connectivity Configuration (No secrets committed into Git)
 db_host: "host.docker.internal"
 db_port: 3306
-db_name: "society_billing"
+db_name: "housing_billing"
 db_user: "root"
 db_password: "{{ lookup('env', 'DB_PASSWORD') | default('Housing@2026', true) }}"
 
@@ -45,4 +45,7 @@ db_password: "{{ lookup('env', 'DB_PASSWORD') | default('Housing@2026', true) }}
 host_gateway_ip: "{{ ansible_facts['default_ipv4']['gateway'] | default('172.31.176.1') }}"
 jenkins_url: "http://{{ host_gateway_ip }}:8080/login"
 nginx_url: "http://{{ host_gateway_ip }}:8081/index.html"
+spring_boot_local_url: "http://{{ host_gateway_ip }}:8082/index.html"
 docker_cd_url: "http://localhost:{{ docker_host_port }}/index.html"
+docker_cd_residents_url: "http://localhost:{{ docker_host_port }}/residents"
+docker_cd_bills_url: "http://localhost:{{ docker_host_port }}/bills"

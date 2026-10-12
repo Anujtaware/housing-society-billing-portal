@@ -4,6 +4,7 @@
 # ===================================================================
 
 param (
+    [string]$Playbook = "provision.yml",
     [switch]$CheckMode,
     [switch]$Verbose,
     [string]$ExtraArgs = ""
@@ -14,11 +15,11 @@ $ErrorActionPreference = "Stop"
 Write-Host "=========================================================="
 Write-Host " Housing Society Billing Portal - Ansible Automation     "
 Write-Host " Controller  : WSL Ubuntu (26.04)"
-Write-Host " Playbook    : ansible/site.yml"
+Write-Host " Playbook    : ansible/$Playbook"
 Write-Host " Check Mode  : $CheckMode"
 Write-Host "=========================================================="
 
-$cmdArgs = @("site.yml")
+$cmdArgs = @($Playbook)
 
 if ($CheckMode) {
     $cmdArgs += "--check"
