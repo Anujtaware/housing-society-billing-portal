@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,7 +36,7 @@ public class BillController {
     }
 
     @PostMapping
-    public Bill addBill(@RequestBody Bill bill) {
+    public Bill addBill(@Valid @RequestBody Bill bill) {
 
         if (bill.getMaintenanceAmount() == null) {
             bill.setMaintenanceAmount(0.0);

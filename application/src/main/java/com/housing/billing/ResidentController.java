@@ -2,6 +2,7 @@ package com.housing.billing;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +29,7 @@ public class ResidentController {
     }
 
     @PostMapping
-    public Resident addResident(@RequestBody Resident resident) {
+    public Resident addResident(@Valid @RequestBody Resident resident) {
         return residentRepository.save(resident);
     }
 

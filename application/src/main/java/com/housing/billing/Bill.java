@@ -4,6 +4,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 @Entity
 public class Bill {
@@ -12,10 +16,21 @@ public class Bill {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Resident ID is required")
+    @Positive(message = "Resident ID must be a positive number")
     private Long residentId;
+
+    @NotBlank(message = "Bill month is required")
     private String billMonth;
+
+    @NotNull(message = "Maintenance amount is required")
+    @PositiveOrZero(message = "Maintenance amount must be positive or zero")
     private Double maintenanceAmount;
+
+    @NotNull(message = "Electricity amount is required")
+    @PositiveOrZero(message = "Electricity amount must be positive or zero")
     private Double electricityAmount;
+
     private Double totalAmount;
     private String status;
     private String paymentDate;
