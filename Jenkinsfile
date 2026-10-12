@@ -5,10 +5,20 @@ pipeline {
         choice(name: 'DEPLOY_ENV', choices: ['DEV', 'TEST', 'STAGING', 'PROD'], description: 'Deployment Target Environment')
         string(name: 'DEPLOY_PORT', defaultValue: '8081', description: 'Nginx Web Server / Reverse Proxy Port')
         string(name: 'APP_PORT', defaultValue: '8082', description: 'Spring Boot Application Port')
+        string(name: 'DOCKER_HOST_PORT', defaultValue: '8084', description: 'Docker Container Host Port Mapping')
     }
 
     environment {
         JENKINS_NODE_COOKIE = 'dontKillMe'
+        DOCKER_IMAGE_NAME = 'housing-society-billing-portal'
+        DOCKER_CONTAINER_NAME = 'housing-billing-cd'
+        DOCKER_CONFIG = 'C:\\Users\\anujt\\.docker'
+        DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+        DB_HOST = 'host.docker.internal'
+        DB_PORT = '3306'
+        DB_NAME = 'housing_billing'
+        DB_USER = 'root'
+        DB_PASSWORD = 'Housing@2026'
     }
 
     options {
@@ -69,6 +79,30 @@ pipeline {
                 bat "mvn test -Dtest=SeleniumE2ETests -Dapp.url=http://localhost:${params.DEPLOY_PORT}/index.html -f application/pom.xml"
             }
         }
+
+        stage('Docker Build') {
+            steps {
+                echo "=== Stage 8: Verify Docker & Build Image (${env.DOCKER_IMAGE_NAME}:build-${BUILD_NUMBER}) ==="
+                bat 'docker version'
+                bat 'docker info'
+                bat "docker build -t ${env.DOCKER_IMAGE_NAME}:build-${BUILD_NUMBER} -t ${env.DOCKER_IMAGE_NAME}:latest ."
+                bat "docker images ${env.DOCKER_IMAGE_NAME}"
+            }
+        }
+
+        stage('Docker Deploy') {
+            steps {
+                echo "=== Stage 9: Deploy Fresh Docker Container (${env.DOCKER_CONTAINER_NAME} on Port ${params.DOCKER_HOST_PORT}) ==="
+                bat "powershell -ExecutionPolicy Bypass -File scripts/docker-deploy.ps1 -ImageName ${env.DOCKER_IMAGE_NAME} -ImageTag build-${BUILD_NUMBER} -HostPort ${params.DOCKER_HOST_PORT} -ContainerName ${env.DOCKER_CONTAINER_NAME}"
+            }
+        }
+
+        stage('Docker Health Check') {
+            steps {
+                echo "=== Stage 10: Verify Docker Application Health & APIs (Port: ${params.DOCKER_HOST_PORT}) ==="
+                bat "powershell -ExecutionPolicy Bypass -File scripts/docker-healthcheck.ps1 -HostPort ${params.DOCKER_HOST_PORT} -ContainerName ${env.DOCKER_CONTAINER_NAME} -MaxRetries 30 -DelaySeconds 2"
+            }
+        }
     }
 
     post {
@@ -79,11 +113,12 @@ pipeline {
             junit testResults: 'application/target/surefire-reports/*.xml', allowEmptyResults: true
         }
         success {
-            echo "✅ Week 10 Continuous Testing Pipeline completed successfully!"
-            echo "🚀 Application is verified & live at: http://localhost:${params.DEPLOY_PORT}/index.html"
+            echo "✅ Week 12 Jenkins-Docker Continuous Deployment Pipeline completed successfully!"
+            echo "🚀 Nginx Reverse Proxy Live: http://localhost:${params.DEPLOY_PORT}/index.html"
+            echo "🐳 Docker Containerized CD Live: http://localhost:${params.DOCKER_HOST_PORT}/index.html"
         }
         failure {
-            echo "❌ Week 10 Continuous Testing Pipeline failed!"
+            echo "❌ Week 12 Jenkins-Docker Continuous Deployment Pipeline failed!"
         }
     }
 }
