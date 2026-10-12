@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+.agents
+documentation
+scripts
+Jenkinsfile
+*.md
+application/src/test
+application/test-results
+application/target/*
+!application/target/billing-portal-0.0.1-SNAPSHOT.jar
