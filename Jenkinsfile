@@ -14,11 +14,6 @@ pipeline {
         DOCKER_CONTAINER_NAME = 'housing-billing-cd'
         DOCKER_CONFIG = 'C:\\Users\\anujt\\.docker'
         DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
-        DB_HOST = 'host.docker.internal'
-        DB_PORT = '3306'
-        DB_NAME = 'housing_billing'
-        DB_USER = 'root'
-        DB_PASSWORD = 'Housing@2026'
     }
 
     options {
