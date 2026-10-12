@@ -35,10 +35,10 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Unit Tests') {
             steps {
-                echo '=== Stage 3: Run Automated Test Suite ==='
-                bat 'mvn test -f application/pom.xml'
+                echo '=== Stage 3: Run Unit & Integration Tests ==='
+                bat 'mvn test -Dtest=!SeleniumE2ETests -f application/pom.xml'
             }
         }
 
@@ -62,20 +62,28 @@ pipeline {
                 bat "powershell -ExecutionPolicy Bypass -File scripts/healthcheck.ps1 -DeployPort ${params.DEPLOY_PORT} -MaxRetries 30 -DelaySeconds 2"
             }
         }
+
+        stage('Selenium Tests') {
+            steps {
+                echo "=== Stage 7: Run Selenium Automated End-to-End UI Tests (Port: ${params.DEPLOY_PORT}) ==="
+                bat "mvn test -Dtest=SeleniumE2ETests -Dapp.url=http://localhost:${params.DEPLOY_PORT}/index.html -f application/pom.xml"
+            }
+        }
     }
 
     post {
         always {
-            echo '=== Archiving Build Artifact & Test Reports ==='
+            echo '=== Archiving Build Artifact, Screenshots & Test Reports ==='
             archiveArtifacts artifacts: 'application/target/*.jar', fingerprint: true, allowEmptyArchive: false
+            archiveArtifacts artifacts: 'application/test-results/screenshots/*.png', allowEmptyArchive: true
             junit testResults: 'application/target/surefire-reports/*.xml', allowEmptyResults: true
         }
         success {
-            echo "✅ Week 8 Continuous Deployment Pipeline completed successfully!"
-            echo "🚀 Application is live at: http://localhost:${params.DEPLOY_PORT}/index.html"
+            echo "✅ Week 10 Continuous Testing Pipeline completed successfully!"
+            echo "🚀 Application is verified & live at: http://localhost:${params.DEPLOY_PORT}/index.html"
         }
         failure {
-            echo "❌ Week 8 Continuous Deployment Pipeline failed!"
+            echo "❌ Week 10 Continuous Testing Pipeline failed!"
         }
     }
 }
