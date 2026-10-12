@@ -869,6 +869,28 @@
         }
     }
 
+    /* ─── Error handling helper ──────────────────────────── */
+    async function getErrorMessage(response) {
+        try {
+            const data = await response.json();
+            if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+                return Object.values(data.fieldErrors).join(' | ');
+            }
+            if (data.message) {
+                return data.message;
+            }
+            if (data.error) {
+                return data.error;
+            }
+        } catch (_) {
+            try {
+                const text = await response.text();
+                if (text && text.trim().length > 0) return text;
+            } catch (_) {}
+        }
+        return 'Server error (' + response.status + ' ' + (response.statusText || 'Error') + ')';
+    }
+
     /* ─── Receipt management ─────────────────────────────── */
     let currentReceipt = null;
 
@@ -876,8 +898,8 @@
         try {
             const response = await fetch('/bills/' + billId + '/receipt');
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Failed to fetch receipt');
+                const errorMsg = await getErrorMessage(response);
+                throw new Error(errorMsg);
             }
 
             const data = await response.json();
@@ -988,8 +1010,8 @@ separator + '\n';
             const response = await fetch('/bills/' + billId + '/pay', { method: 'PUT' });
 
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Server returned ' + response.status);
+                const errorMsg = await getErrorMessage(response);
+                throw new Error(errorMsg);
             }
 
             showToast('Bill #' + billId + ' marked as PAID.', 'success');
@@ -1007,8 +1029,8 @@ separator + '\n';
         try {
             const response = await fetch('/residents/' + residentId, { method: 'DELETE' });
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Server returned ' + response.status);
+                const errorMsg = await getErrorMessage(response);
+                throw new Error(errorMsg);
             }
             showToast('Resident #' + residentId + ' deleted.', 'success');
             await loadResidents();
@@ -1024,8 +1046,8 @@ separator + '\n';
         try {
             const response = await fetch('/bills/' + billId, { method: 'DELETE' });
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Server returned ' + response.status);
+                const errorMsg = await getErrorMessage(response);
+                throw new Error(errorMsg);
             }
             showToast('Bill #' + billId + ' deleted.', 'success');
             await loadBills();
@@ -1061,8 +1083,8 @@ separator + '\n';
             });
 
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Server returned ' + response.status);
+                const errorMsg = await getErrorMessage(response);
+                throw new Error(errorMsg);
             }
 
             const created = await response.json();
@@ -1107,8 +1129,8 @@ separator + '\n';
             });
 
             if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'Server returned ' + response.status);
+                const errorMsg = await getErrorMessage(response);
+                throw new Error(errorMsg);
             }
 
             const created = await response.json();
