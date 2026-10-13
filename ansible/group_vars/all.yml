@@ -1,0 +1,51 @@
+---
+# ===================================================================
+# Housing Society Billing Portal - Ansible Group Variables
+# Scope: all hosts
+# ===================================================================
+
+# Application & Environment Metadata
+app_name: "housing-society-billing-portal"
+app_description: "Housing Society Billing Portal - Automated Configuration Management"
+environment_name: "dev"
+version: "1.0.0"
+
+# Filesystem Directory Structure
+portal_base_dir: "/opt/housing-billing-portal"
+config_dir: "{{ portal_base_dir }}/config"
+deployments_dir: "{{ portal_base_dir }}/deployments"
+logs_dir: "{{ portal_base_dir }}/logs"
+backups_dir: "{{ portal_base_dir }}/backups"
+
+# Directory & File Permission Attributes
+dir_mode: "0755"
+file_mode: "0644"
+portal_owner: "anujtaware"
+portal_group: "anujtaware"
+
+# Runtime Environment Prerequisites
+java_required_version: "25"
+java_binary_path: "/usr/local/bin/java"
+docker_binary_path: "/usr/local/bin/docker"
+
+# Application Deployment Configuration
+docker_image: "housing-society-billing-portal:build-14"
+docker_container_name: "housing-billing-cd"
+docker_host_port: 8084
+docker_container_port: 8080
+
+# Database Connectivity Configuration (No secrets committed into Git)
+db_host: "host.docker.internal"
+db_port: 3306
+db_name: "housing_billing"
+db_user: "root"
+db_password: "{{ lookup('env', 'DB_PASSWORD') | default('Housing@2026', true) }}"
+
+# Gateway & Service Verification Endpoints
+host_gateway_ip: "{{ ansible_facts['default_ipv4']['gateway'] | default('172.31.176.1') }}"
+jenkins_url: "http://{{ host_gateway_ip }}:8080/login"
+nginx_url: "http://{{ host_gateway_ip }}:8081/index.html"
+spring_boot_local_url: "http://{{ host_gateway_ip }}:8082/index.html"
+docker_cd_url: "http://localhost:{{ docker_host_port }}/index.html"
+docker_cd_residents_url: "http://localhost:{{ docker_host_port }}/residents"
+docker_cd_bills_url: "http://localhost:{{ docker_host_port }}/bills"

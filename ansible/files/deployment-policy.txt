@@ -1,0 +1,19 @@
+Housing Society Billing Portal - Deployment Policy
+===================================================
+1. Configuration Management:
+   All environment-level directories, configuration properties, and environment manifests
+   must be managed via Ansible automation.
+
+2. Immutability & Traceability:
+   Application container images are tagged with Jenkins build numbers (e.g. build-14).
+   Configuration templates interpolate environment parameters without altering source code.
+
+3. Quality Gates:
+   All unit tests (9/9) and end-to-end Selenium tests (5/5) must pass prior to deployment.
+
+4. Non-Disruption Policy:
+   Automated configuration runs must preserve running services:
+   - Jenkins (8080)
+   - Nginx Reverse Proxy (8081)
+   - Local Spring Boot (8082)
+   - Docker CD Deployment (8084)

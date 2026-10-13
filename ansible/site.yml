@@ -1,0 +1,150 @@
+---
+# ===================================================================
+# Housing Society Billing Portal - Ansible Configuration Playbook
+# File       : ansible/site.yml
+# Target     : billing_portal (localhost / WSL2 environment)
+# ===================================================================
+
+- name: Manage Housing Society Billing Portal Environment Prerequisites & Configuration
+  hosts: billing_portal
+  gather_facts: true
+  become: false
+
+  tasks:
+    # ---------------------------------------------------------------
+    # 1. Directory Structure Management
+    # ---------------------------------------------------------------
+    - name: Create required portal directories with defined permissions
+      become: true
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ portal_owner }}"
+        group: "{{ portal_group }}"
+        mode: "{{ dir_mode }}"
+      loop:
+        - "{{ portal_base_dir }}"
+        - "{{ config_dir }}"
+        - "{{ deployments_dir }}"
+        - "{{ logs_dir }}"
+        - "{{ backups_dir }}"
+
+    # ---------------------------------------------------------------
+    # 2. Runtime Environment Verification
+    # ---------------------------------------------------------------
+    - name: Verify Java runtime binary is present
+      ansible.builtin.stat:
+        path: "{{ java_binary_path }}"
+      register: java_binary_stat
+      check_mode: false
+
+    - name: Assert Java runtime binary exists
+      ansible.builtin.assert:
+        that:
+          - java_binary_stat.stat.exists
+        fail_msg: "Java binary was not found at {{ java_binary_path }}!"
+        success_msg: "Java binary confirmed present at {{ java_binary_path }}."
+
+    - name: Check Java version output
+      ansible.builtin.command: "{{ java_binary_path }} -version"
+      register: java_version_raw
+      changed_when: false
+      check_mode: false
+
+    - name: Verify Docker CLI binary is present
+      ansible.builtin.stat:
+        path: "{{ docker_binary_path }}"
+      register: docker_binary_stat
+      check_mode: false
+
+    - name: Assert Docker CLI binary exists
+      ansible.builtin.assert:
+        that:
+          - docker_binary_stat.stat.exists
+        fail_msg: "Docker binary was not found at {{ docker_binary_path }}!"
+        success_msg: "Docker binary confirmed present at {{ docker_binary_path }}."
+
+    - name: Check Docker version output
+      ansible.builtin.command: "{{ docker_binary_path }} version --format '{{ '{{' }}.Server.Version{{ '}}' }}'"
+      register: docker_version_raw
+      changed_when: false
+      check_mode: false
+
+    # ---------------------------------------------------------------
+    # 3. Configuration Management & Templating
+    # ---------------------------------------------------------------
+    - name: Deploy application environment properties from template
+      ansible.builtin.template:
+        src: templates/application-env.properties.j2
+        dest: "{{ config_dir }}/application-env.properties"
+        owner: "{{ portal_owner }}"
+        group: "{{ portal_group }}"
+        mode: "{{ file_mode }}"
+
+    - name: Deploy environment manifest metadata JSON from template
+      ansible.builtin.template:
+        src: templates/portal-environment.json.j2
+        dest: "{{ config_dir }}/portal-environment.json"
+        owner: "{{ portal_owner }}"
+        group: "{{ portal_group }}"
+        mode: "{{ file_mode }}"
+
+    - name: Deploy deployment policy file
+      ansible.builtin.copy:
+        src: files/deployment-policy.txt
+        dest: "{{ config_dir }}/deployment-policy.txt"
+        owner: "{{ portal_owner }}"
+        group: "{{ portal_group }}"
+        mode: "{{ file_mode }}"
+
+    # ---------------------------------------------------------------
+    # 4. Service Reachability & Non-Disruption Verification
+    # ---------------------------------------------------------------
+    - name: Verify Docker CD deployment endpoint is responsive (Port {{ docker_host_port }})
+      ansible.builtin.uri:
+        url: "{{ docker_cd_url }}"
+        method: GET
+        status_code: 200
+        return_content: false
+      register: docker_cd_response
+      check_mode: false
+
+    - name: Verify Nginx reverse proxy endpoint is responsive (Port 8081)
+      ansible.builtin.uri:
+        url: "{{ nginx_url }}"
+        method: GET
+        status_code: 200
+        return_content: false
+      register: nginx_response
+      check_mode: false
+
+    - name: Verify Jenkins CI endpoint is responsive (Port 8080)
+      ansible.builtin.uri:
+        url: "{{ jenkins_url }}"
+        method: GET
+        status_code: 200
+        return_content: false
+      register: jenkins_response
+      check_mode: false
+
+    # ---------------------------------------------------------------
+    # 5. Configuration Audit Summary
+    # ---------------------------------------------------------------
+    - name: Display Configuration Management Audit Summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Housing Society Billing Portal - Configuration Audit     "
+          - "=========================================================="
+          - "Application       : {{ app_name }} ({{ environment_name }})"
+          - "Config Directory  : {{ config_dir }}"
+          - "Deployments Dir   : {{ deployments_dir }}"
+          - "Java Version      : {{ java_version_raw.stderr_lines[0] | default('Verified') }}"
+          - "Docker Engine     : {{ docker_version_raw.stdout | default('Verified') }}"
+          - "Docker CD Port    : {{ docker_host_port }} (HTTP 200 OK)"
+          - "Nginx Port        : 8081 (HTTP 200 OK)"
+          - "Jenkins Port      : 8080 (HTTP 200 OK)"
+          - "Configuration File: {{ config_dir }}/application-env.properties"
+          - "Environment JSON  : {{ config_dir }}/portal-environment.json"
+          - "Policy File       : {{ config_dir }}/deployment-policy.txt"
+          - "=========================================================="

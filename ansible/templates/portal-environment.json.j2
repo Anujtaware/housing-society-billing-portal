@@ -1,0 +1,31 @@
+{
+  "application": "{{ app_name }}",
+  "environment": "{{ environment_name }}",
+  "version": "{{ version }}",
+  "managed_by": "Ansible",
+  "controller_host": "{{ inventory_hostname }}",
+  "directories": {
+    "base": "{{ portal_base_dir }}",
+    "config": "{{ config_dir }}",
+    "deployments": "{{ deployments_dir }}",
+    "logs": "{{ logs_dir }}",
+    "backups": "{{ backups_dir }}"
+  },
+  "runtime": {
+    "java_required": "{{ java_required_version }}",
+    "java_binary": "{{ java_binary_path }}",
+    "docker_binary": "{{ docker_binary_path }}"
+  },
+  "deployment": {
+    "docker_image": "{{ docker_image }}",
+    "container_name": "{{ docker_container_name }}",
+    "host_port": {{ docker_host_port }},
+    "container_port": {{ docker_container_port }}
+  },
+  "database": {
+    "host": "{{ db_host }}",
+    "port": {{ db_port }},
+    "name": "{{ db_name }}",
+    "user": "{{ db_user }}"
+  }
+}
