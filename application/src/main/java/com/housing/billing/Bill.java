@@ -1,5 +1,10 @@
 package com.housing.billing;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,6 +27,10 @@ public class Bill {
 
     @NotBlank(message = "Bill month is required")
     private String billMonth;
+
+    @NotNull(message = "Due date is required")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate dueDate;
 
     @NotNull(message = "Maintenance amount is required")
     @PositiveOrZero(message = "Maintenance amount must be positive or zero")
@@ -58,6 +67,14 @@ public class Bill {
         this.billMonth = billMonth;
     }
 
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+    }
+
     public Double getMaintenanceAmount() {
         return maintenanceAmount;
     }
@@ -83,7 +100,26 @@ public class Bill {
     }
 
     public String getStatus() {
-        return status;
+        LocalDate pDate = getParsedPaymentDate();
+        boolean hasPaidFlag = (this.status != null && this.status.toUpperCase().startsWith("PAID"));
+
+        if (pDate != null || hasPaidFlag) {
+            if (pDate != null && dueDate != null) {
+                if (pDate.isAfter(dueDate)) {
+                    return "PAID LATE";
+                }
+                return "PAID ON TIME";
+            }
+            if ("PAID LATE".equalsIgnoreCase(this.status)) {
+                return "PAID LATE";
+            }
+            return "PAID ON TIME";
+        }
+
+        if (dueDate != null && LocalDate.now().isAfter(dueDate)) {
+            return "OVERDUE";
+        }
+        return "PENDING";
     }
 
     public void setStatus(String status) {
@@ -96,5 +132,26 @@ public class Bill {
 
     public void setPaymentDate(String paymentDate) {
         this.paymentDate = paymentDate;
+    }
+
+    @JsonIgnore
+    public LocalDate getParsedPaymentDate() {
+        if (paymentDate == null || paymentDate.isBlank()) {
+            return null;
+        }
+        String trimmed = paymentDate.trim();
+        try {
+            return LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (Exception e1) {
+            try {
+                return LocalDate.parse(trimmed, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+            } catch (Exception e2) {
+                try {
+                    return LocalDate.parse(trimmed, DateTimeFormatter.ofPattern("d-M-yyyy"));
+                } catch (Exception e3) {
+                    return null;
+                }
+            }
+        }
     }
 }

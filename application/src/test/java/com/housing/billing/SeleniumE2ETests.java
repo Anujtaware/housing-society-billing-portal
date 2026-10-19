@@ -53,6 +53,7 @@ public class SeleniumE2ETests {
     private static final String TEST_PHONE = "9988776655";
     private static final String TEST_EMAIL = "selenium.resident@society.com";
     private static final String TEST_BILL_MONTH = "SeleniumMonth 2026";
+    private static final String TEST_DUE_DATE = "2026-11-15";
     private static final String TEST_MAINTENANCE = "3000";
     private static final String TEST_ELECTRICITY = "1500";
     private static String createdResidentId = null;
@@ -232,6 +233,7 @@ public class SeleniumE2ETests {
         // 3. Fill Form Fields
         WebElement resIdInput = driver.findElement(By.id("billResidentId"));
         WebElement monthInput = driver.findElement(By.id("billMonth"));
+        WebElement dueDateInput = driver.findElement(By.id("billDueDate"));
         WebElement maintInput = driver.findElement(By.id("maintenanceAmount"));
         WebElement elecInput = driver.findElement(By.id("electricityAmount"));
 
@@ -239,6 +241,12 @@ public class SeleniumE2ETests {
         resIdInput.sendKeys(createdResidentId);
         monthInput.clear();
         monthInput.sendKeys(TEST_BILL_MONTH);
+
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].value = '" + TEST_DUE_DATE + "'; arguments[0].dispatchEvent(new Event('input', { bubbles: true })); arguments[0].dispatchEvent(new Event('change', { bubbles: true }));",
+                dueDateInput
+        );
+
         maintInput.clear();
         maintInput.sendKeys(TEST_MAINTENANCE);
         elecInput.clear();
@@ -262,7 +270,7 @@ public class SeleniumE2ETests {
                     if (!cells.isEmpty()) {
                         createdBillId = cells.get(0).getText().trim();
                     }
-                    return true;
+                    return row.getText().contains(TEST_DUE_DATE);
                 }
             }
             return false;
@@ -295,8 +303,8 @@ public class SeleniumE2ETests {
         });
         assertNotNull(billRow, "Target bill row must exist in table");
 
-        // 2. Verify status is UNPAID before clicking pay
-        assertTrue(billRow.getText().contains("UNPAID"), "Bill status must initially be UNPAID");
+        // 2. Verify status is PENDING before clicking pay
+        assertTrue(billRow.getText().contains("PENDING"), "Bill status must initially be PENDING");
 
         // 3. Click the Pay button
         WebElement payBtn = billRow.findElement(By.className("btn-pay"));
@@ -355,17 +363,19 @@ public class SeleniumE2ETests {
 
         // 3. Verify Receipt Fields
         WebElement badge = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("receiptStatusBadge")));
-        assertEquals("PAID", badge.getText().trim(), "Receipt badge should show PAID");
+        assertEquals("PAID ON TIME", badge.getText().trim(), "Receipt badge should show PAID ON TIME");
 
         WebElement rResidentName = driver.findElement(By.id("rResidentName"));
         WebElement rFlatNumber = driver.findElement(By.id("rFlatNumber"));
         WebElement rBillMonth = driver.findElement(By.id("rBillMonth"));
+        WebElement rDueDate = driver.findElement(By.id("rDueDate"));
         WebElement rTotal = driver.findElement(By.id("rTotal"));
         WebElement rPayDate = driver.findElement(By.id("rPayDate"));
 
         assertEquals(TEST_RESIDENT_NAME, rResidentName.getText().trim(), "Resident name should match");
         assertEquals(TEST_FLAT_NUMBER, rFlatNumber.getText().trim(), "Flat number should match");
         assertEquals(TEST_BILL_MONTH, rBillMonth.getText().trim(), "Bill month should match");
+        assertEquals(TEST_DUE_DATE, rDueDate.getText().trim(), "Receipt due date should match");
         assertTrue(rTotal.getText().contains("4500"), "Total amount should match maintenance + electricity (4500)");
         assertFalse(rPayDate.getText().contains("Pending"), "Payment date should be populated for paid bill");
 
