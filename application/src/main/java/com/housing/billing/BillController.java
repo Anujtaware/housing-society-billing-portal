@@ -35,6 +35,12 @@ public class BillController {
         return billRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public Bill getBillById(@PathVariable Long id) {
+        return billRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bill not found with ID: " + id));
+    }
+
     @PostMapping
     public Bill addBill(@Valid @RequestBody Bill bill) {
 
@@ -50,8 +56,57 @@ public class BillController {
             bill.getMaintenanceAmount() + bill.getElectricityAmount()
         );
 
-        if (bill.getStatus() == null || bill.getStatus().isBlank()) {
-            bill.setStatus("UNPAID");
+        if (bill.getPaymentDate() != null && !bill.getPaymentDate().isBlank()) {
+            LocalDate pDate = bill.getParsedPaymentDate();
+            if (pDate != null && bill.getDueDate() != null && pDate.isAfter(bill.getDueDate())) {
+                bill.setStatus("PAID LATE");
+            } else {
+                bill.setStatus("PAID ON TIME");
+            }
+        } else if (bill.getStatus() != null && bill.getStatus().toUpperCase().startsWith("PAID")) {
+            bill.setStatus("PAID ON TIME");
+        } else if (bill.getDueDate() != null && LocalDate.now().isAfter(bill.getDueDate())) {
+            bill.setStatus("OVERDUE");
+        } else {
+            bill.setStatus("PENDING");
+        }
+
+        return billRepository.save(bill);
+    }
+
+    @PutMapping("/{id}")
+    public Bill updateBill(@PathVariable Long id, @Valid @RequestBody Bill billDetails) {
+        Bill bill = billRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bill not found with ID: " + id));
+
+        bill.setResidentId(billDetails.getResidentId());
+        bill.setBillMonth(billDetails.getBillMonth());
+        bill.setDueDate(billDetails.getDueDate());
+        bill.setMaintenanceAmount(billDetails.getMaintenanceAmount() != null ? billDetails.getMaintenanceAmount() : 0.0);
+        bill.setElectricityAmount(billDetails.getElectricityAmount() != null ? billDetails.getElectricityAmount() : 0.0);
+        bill.setTotalAmount(bill.getMaintenanceAmount() + bill.getElectricityAmount());
+
+        boolean isPaidUpdate = (billDetails.getPaymentDate() != null && !billDetails.getPaymentDate().isBlank()) ||
+                (billDetails.getStatus() != null && billDetails.getStatus().toUpperCase().startsWith("PAID")) ||
+                (bill.getPaymentDate() != null && !bill.getPaymentDate().isBlank()) ||
+                (bill.getStatus() != null && bill.getStatus().toUpperCase().startsWith("PAID"));
+
+        if (isPaidUpdate) {
+            if (billDetails.getPaymentDate() != null && !billDetails.getPaymentDate().isBlank()) {
+                bill.setPaymentDate(billDetails.getPaymentDate());
+            } else if (bill.getPaymentDate() == null || bill.getPaymentDate().isBlank()) {
+                bill.setPaymentDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+            }
+            LocalDate pDate = bill.getParsedPaymentDate();
+            if (pDate != null && bill.getDueDate() != null && pDate.isAfter(bill.getDueDate())) {
+                bill.setStatus("PAID LATE");
+            } else {
+                bill.setStatus("PAID ON TIME");
+            }
+        } else if (bill.getDueDate() != null && LocalDate.now().isAfter(bill.getDueDate())) {
+            bill.setStatus("OVERDUE");
+        } else {
+            bill.setStatus("PENDING");
         }
 
         return billRepository.save(bill);
@@ -62,8 +117,13 @@ public class BillController {
         Bill bill = billRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bill not found with ID: " + id));
 
-        bill.setStatus("PAID");
-        bill.setPaymentDate(LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+        LocalDate today = LocalDate.now();
+        bill.setPaymentDate(today.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+        if (bill.getDueDate() != null && today.isAfter(bill.getDueDate())) {
+            bill.setStatus("PAID LATE");
+        } else {
+            bill.setStatus("PAID ON TIME");
+        }
 
         return billRepository.save(bill);
     }
@@ -85,7 +145,8 @@ public class BillController {
         String email = (resident != null && resident.getEmail() != null) ? resident.getEmail() : "N/A";
 
         String payDate;
-        if ("PAID".equalsIgnoreCase(bill.getStatus())) {
+        String billStatus = bill.getStatus();
+        if (billStatus != null && billStatus.toUpperCase().startsWith("PAID")) {
             payDate = (bill.getPaymentDate() != null && !bill.getPaymentDate().isBlank())
                     ? bill.getPaymentDate()
                     : LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
@@ -99,6 +160,7 @@ public class BillController {
                 receiptNumber,
                 bill.getId(),
                 bill.getBillMonth(),
+                bill.getDueDate(),
                 bill.getResidentId(),
                 resName,
                 flatNum,

@@ -1,10 +1,18 @@
 package com.housing.billing;
 
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 public class BillReceipt {
 
     private String receiptNumber;
     private Long billId;
     private String billMonth;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate dueDate;
+
     private Long residentId;
     private String residentName;
     private String flatNumber;
@@ -24,9 +32,18 @@ public class BillReceipt {
                        String residentName, String flatNumber, String phone, String email,
                        Double maintenanceAmount, Double electricityAmount, Double totalAmount,
                        String status, String paymentDate, String issuedAt) {
+        this(receiptNumber, billId, billMonth, null, residentId, residentName, flatNumber, phone, email,
+             maintenanceAmount, electricityAmount, totalAmount, status, paymentDate, issuedAt);
+    }
+
+    public BillReceipt(String receiptNumber, Long billId, String billMonth, LocalDate dueDate, Long residentId,
+                       String residentName, String flatNumber, String phone, String email,
+                       Double maintenanceAmount, Double electricityAmount, Double totalAmount,
+                       String status, String paymentDate, String issuedAt) {
         this.receiptNumber = receiptNumber;
         this.billId = billId;
         this.billMonth = billMonth;
+        this.dueDate = dueDate;
         this.residentId = residentId;
         this.residentName = residentName;
         this.flatNumber = flatNumber;
@@ -62,6 +79,14 @@ public class BillReceipt {
 
     public void setBillMonth(String billMonth) {
         this.billMonth = billMonth;
+    }
+
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
     }
 
     public Long getResidentId() {

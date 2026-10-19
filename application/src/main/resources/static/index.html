@@ -141,8 +141,48 @@
 
         tr:last-child td { border-bottom: none; }
 
-        .paid   { color: #16a34a; font-weight: bold; }
-        .unpaid { color: #dc2626; font-weight: bold; }
+        .paid, .paid-on-time { color: #16a34a; font-weight: bold; }
+        .paid-late { color: #ea580c; font-weight: bold; }
+        .pending { color: #d97706; font-weight: bold; }
+        .overdue { color: #dc2626; font-weight: bold; }
+        .unpaid  { color: #dc2626; font-weight: bold; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .status-badge.paid,
+        .status-badge.paid-on-time {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+        }
+        .status-badge.paid-late {
+            background: #ffedd5;
+            color: #c2410c;
+            border: 1px solid #fdba74;
+        }
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .status-badge.overdue {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+            animation: pulseWarning 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseWarning {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            50%      { box-shadow: 0 0 0 4px rgba(220, 38, 38, 0); }
+        }
 
         .empty-row td { text-align: center; color: #9ca3af; padding: 24px; }
 
@@ -269,6 +309,13 @@
             background: #b45309;
         }
 
+        .btn-receipt-overdue {
+            background: #dc2626;
+        }
+        .btn-receipt-overdue:hover {
+            background: #b91c1c;
+        }
+
         .receipt-modal {
             max-width: 580px;
             padding: 30px;
@@ -304,16 +351,30 @@
             letter-spacing: 0.05em;
         }
 
-        .receipt-badge.paid {
+        .receipt-badge.paid,
+        .receipt-badge.paid-on-time {
             background: #dcfce7;
             color: #15803d;
             border: 1px solid #86efac;
         }
 
+        .receipt-badge.paid-late {
+            background: #ffedd5;
+            color: #c2410c;
+            border: 1px solid #fdba74;
+        }
+
+        .receipt-badge.pending,
         .receipt-badge.unpaid {
             background: #fef3c7;
             color: #b45309;
             border: 1px solid #fde68a;
+        }
+
+        .receipt-badge.overdue {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
         }
 
         .receipt-divider {
@@ -389,16 +450,30 @@
             font-size: 0.82rem;
         }
 
-        .receipt-notice.paid {
+        .receipt-notice.paid,
+        .receipt-notice.paid-on-time {
             background: #ecfdf5;
             color: #065f46;
             border: 1px solid #a7f3d0;
         }
 
+        .receipt-notice.paid-late {
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+        }
+
+        .receipt-notice.pending,
         .receipt-notice.unpaid {
             background: #fffbeb;
             color: #92400e;
             border: 1px solid #fcd34d;
+        }
+
+        .receipt-notice.overdue {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
         }
 
         .receipt-fineprint {
@@ -513,6 +588,7 @@
                     <th>ID</th>
                     <th>Resident ID</th>
                     <th>Month</th>
+                    <th>Due Date</th>
                     <th>Maintenance</th>
                     <th>Electricity</th>
                     <th>Total</th>
@@ -588,6 +664,12 @@
                 <div class="field-error" id="err-billMonth">Bill month is required.</div>
             </div>
 
+            <div class="form-group" id="fg-billDueDate">
+                <label for="billDueDate">Due Date <span style="color:#dc2626">*</span></label>
+                <input type="date" id="billDueDate">
+                <div class="field-error" id="err-billDueDate">Due date is required.</div>
+            </div>
+
             <div class="form-group" id="fg-maintenanceAmount">
                 <label for="maintenanceAmount">Maintenance Amount (₹) <span style="color:#dc2626">*</span></label>
                 <input type="number" id="maintenanceAmount" placeholder="e.g. 2500" min="0" step="0.01">
@@ -631,6 +713,7 @@
             <div><strong>Receipt No:</strong> <span id="rReceiptNo">-</span></div>
             <div><strong>Issued Date:</strong> <span id="rIssuedAt">-</span></div>
             <div><strong>Bill Month:</strong> <span id="rBillMonth">-</span></div>
+            <div><strong>Due Date:</strong> <span id="rDueDate">-</span></div>
             <div><strong>Payment Date:</strong> <span id="rPayDate">-</span></div>
         </div>
 
@@ -765,19 +848,22 @@
     function validateBillForm() {
         const residentId    = document.getElementById('billResidentId').value.trim();
         const billMonth     = document.getElementById('billMonth').value.trim();
+        const dueDate       = document.getElementById('billDueDate').value.trim();
         const maintenance   = document.getElementById('maintenanceAmount').value.trim();
         const electricity   = document.getElementById('electricityAmount').value.trim();
 
         const residentIdOk  = residentId && parseInt(residentId) > 0;
+        const dueDateOk     = Boolean(dueDate);
         const maintenanceOk = maintenance !== '' && parseFloat(maintenance) >= 0;
         const electricityOk = electricity !== '' && parseFloat(electricity) >= 0;
 
         setFieldError('fg-billResidentId',    !residentIdOk);
         setFieldError('fg-billMonth',         !billMonth);
+        setFieldError('fg-billDueDate',       !dueDateOk);
         setFieldError('fg-maintenanceAmount', !maintenanceOk);
         setFieldError('fg-electricityAmount', !electricityOk);
 
-        return residentIdOk && billMonth && maintenanceOk && electricityOk;
+        return residentIdOk && billMonth && dueDateOk && maintenanceOk && electricityOk;
     }
 
     /* ─── Load Residents ──────────────────────────────────── */
@@ -838,14 +924,18 @@
             bills.forEach(bill => {
                 total += bill.totalAmount || 0;
 
-                const isPaid       = bill.status === 'PAID';
-                const statusClass  = isPaid ? 'paid' : 'unpaid';
+                const statusStr    = bill.status || 'PENDING';
+                const isPaid       = statusStr.toUpperCase().startsWith('PAID');
+                const isOverdue    = statusStr === 'OVERDUE';
+                const statusClass  = statusStr.toLowerCase().replace(/\s+/g, '-');
                 const payBtn       = isPaid
                     ? ''
                     : '<button class="btn-pay" onclick="markAsPaid(' + bill.id + ')">Mark as Paid</button>';
                 const receiptBtn   = isPaid
                     ? '<button class="btn-receipt" onclick="viewReceipt(' + bill.id + ')">📄 Receipt</button>'
-                    : '<button class="btn-receipt btn-receipt-unpaid" onclick="viewReceipt(' + bill.id + ')" title="Unpaid: View billing statement or settle payment">📄 Receipt (Unpaid)</button>';
+                    : (isOverdue
+                        ? '<button class="btn-receipt btn-receipt-overdue" onclick="viewReceipt(' + bill.id + ')" title="Overdue: View statement or settle payment">📄 Receipt (Overdue)</button>'
+                        : '<button class="btn-receipt btn-receipt-unpaid" onclick="viewReceipt(' + bill.id + ')" title="Pending: View statement or settle payment">📄 Receipt</button>');
                 const deleteBtn    = '<button class="btn-delete" onclick="deleteBill(' + bill.id + ')">Delete</button>';
 
                 const tr = document.createElement('tr');
@@ -853,10 +943,11 @@
                     '<td>' + escHtml(String(bill.id))                          + '</td>' +
                     '<td>' + escHtml(String(bill.residentId))                  + '</td>' +
                     '<td>' + escHtml(bill.billMonth)                           + '</td>' +
+                    '<td>' + escHtml(bill.dueDate || '-')                      + '</td>' +
                     '<td>₹' + escHtml(String(bill.maintenanceAmount))          + '</td>' +
                     '<td>₹' + escHtml(String(bill.electricityAmount))          + '</td>' +
                     '<td>₹' + escHtml(String(bill.totalAmount))                + '</td>' +
-                    '<td class="' + statusClass + '">' + escHtml(bill.status) + '</td>' +
+                    '<td class="' + statusClass + '"><span class="status-badge ' + statusClass + '">' + escHtml(bill.status) + '</span></td>' +
                     '<td>' + payBtn + receiptBtn + deleteBtn                    + '</td>';
                 table.appendChild(tr);
             });
@@ -908,6 +999,7 @@
             document.getElementById('rReceiptNo').innerText    = data.receiptNumber || ('REC-' + data.billId);
             document.getElementById('rIssuedAt').innerText     = data.issuedAt || '-';
             document.getElementById('rBillMonth').innerText    = data.billMonth || '-';
+            document.getElementById('rDueDate').innerText      = data.dueDate || '-';
             document.getElementById('rPayDate').innerText      = data.paymentDate || '-';
 
             document.getElementById('rResidentName').innerText = data.residentName || '-';
@@ -919,18 +1011,29 @@
             document.getElementById('rElectricity').innerText  = '₹' + (data.electricityAmount != null ? data.electricityAmount.toFixed(2) : '0.00');
             document.getElementById('rTotal').innerText        = '₹' + (data.totalAmount != null ? data.totalAmount.toFixed(2) : '0.00');
 
-            const isPaid = (data.status === 'PAID');
+            const statusUpper = (data.status || 'PENDING').toUpperCase();
+            const isPaidLate = (statusUpper === 'PAID LATE');
+            const isPaid = statusUpper.startsWith('PAID');
+            const isOverdue = (statusUpper === 'OVERDUE');
+            const statusKey = isPaidLate ? 'paid-late' : (isPaid ? 'paid-on-time' : (isOverdue ? 'overdue' : 'pending'));
             const badge = document.getElementById('receiptStatusBadge');
-            badge.innerText = data.status || 'UNPAID';
-            badge.className = 'receipt-badge ' + (isPaid ? 'paid' : 'unpaid');
+            badge.innerText = data.status || 'PENDING';
+            badge.className = 'receipt-badge ' + statusKey;
 
             const notice = document.getElementById('receiptNotice');
-            if (isPaid) {
-                notice.className = 'receipt-notice paid';
-                notice.innerHTML = '✅ <strong>Payment Confirmed:</strong> Sincere thanks for your timely payment! This document acts as your official payment receipt.';
+            if (isPaidLate) {
+                notice.className = 'receipt-notice paid-late';
+                notice.innerHTML = '⚠️ <strong>Payment Received Late:</strong> Payment was recorded on ' + escHtml(data.paymentDate || '-') + ' after the due date of ' + escHtml(data.dueDate || 'N/A') + '. This document acts as your official payment receipt.';
+            } else if (isPaid) {
+                notice.className = 'receipt-notice paid-on-time';
+                notice.innerHTML = '✅ <strong>Payment Confirmed (On Time):</strong> Sincere thanks for your timely payment! This document acts as your official payment receipt.';
+            } else if (isOverdue) {
+                notice.className = 'receipt-notice overdue';
+                notice.innerHTML = '🚨 <strong>Payment Overdue:</strong> The payment deadline of ' + escHtml(data.dueDate || 'N/A') + ' has passed. Please settle payment immediately.<br>' +
+                    '<button class="btn btn-primary" style="margin-top:8px;padding:6px 12px;font-size:0.8rem;" onclick="payFromReceipt(' + data.billId + ')">💳 Settle Payment Now</button>';
             } else {
-                notice.className = 'receipt-notice unpaid';
-                notice.innerHTML = '⚠️ <strong>Payment Required:</strong> This bill is currently UNPAID. Settle payment before an official stamped receipt can be issued.<br>' +
+                notice.className = 'receipt-notice pending';
+                notice.innerHTML = '⚠️ <strong>Payment Required:</strong> This bill is currently PENDING payment. Due Date: ' + escHtml(data.dueDate || 'N/A') + '. Settle payment before an official stamped receipt can be issued.<br>' +
                     '<button class="btn btn-primary" style="margin-top:8px;padding:6px 12px;font-size:0.8rem;" onclick="payFromReceipt(' + data.billId + ')">💳 Settle Payment Now</button>';
             }
 
@@ -962,7 +1065,20 @@
         const separator = '='.repeat(64);
         const divider   = '-'.repeat(64);
 
-        const content =
+let receiptStatusLine = 'Status: UNPAID - Payment is required immediately.\n';
+if (r.status === 'PAID ON TIME') {
+    receiptStatusLine = 'Status: PAID ON TIME - Sincere thanks for your timely payment!\n';
+} else if (r.status === 'PAID LATE') {
+    receiptStatusLine = 'Status: PAID LATE - Payment was received after the due date.\n';
+} else if (r.status && r.status.startsWith('PAID')) {
+    receiptStatusLine = 'Status: ' + r.status + ' - Thank you for your payment!\n';
+} else if (r.status === 'OVERDUE') {
+    receiptStatusLine = 'Status: OVERDUE - Payment deadline has passed. Immediate settlement required.\n';
+} else {
+    receiptStatusLine = 'Status: PENDING - Payment is required on or before the due date.\n';
+}
+
+const content =
 separator + '\n' +
 '               HOUSING SOCIETY BILLING PORTAL\n' +
 '           OFFICIAL MAINTENANCE & UTILITY RECEIPT\n' +
@@ -970,6 +1086,7 @@ separator + '\n' +
 'Receipt Number : ' + r.receiptNumber + '\n' +
 'Issue Timestamp: ' + r.issuedAt + '\n' +
 'Billing Month  : ' + r.billMonth + '\n' +
+'Due Date       : ' + (r.dueDate || '-') + '\n' +
 'Payment Status : ' + r.status + '\n' +
 'Payment Date   : ' + r.paymentDate + '\n' +
 divider + '\n' +
@@ -985,9 +1102,7 @@ divider + '\n' +
 divider + '\n' +
 'TOTAL AMOUNT                   : Rs. ' + (r.totalAmount != null ? r.totalAmount.toFixed(2) : '0.00') + '\n' +
 divider + '\n' +
-(r.status === 'PAID'
-    ? 'Status: PAID - Thank you for your payment!\n'
-    : 'Status: UNPAID - Payment is required immediately.\n') +
+receiptStatusLine +
 'Note: This is a computer-generated receipt from the Housing\n' +
 'Society Billing Portal. Valid without physical signature.\n' +
 separator + '\n';
@@ -996,7 +1111,7 @@ separator + '\n';
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'Receipt_Bill_' + r.billId + '_' + (r.status || 'UNPAID') + '.txt';
+        link.download = 'Receipt_Bill_' + r.billId + '_' + (r.status ? r.status.replace(/\s+/g, '_') : 'UNPAID') + '.txt';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1014,7 +1129,9 @@ separator + '\n';
                 throw new Error(errorMsg);
             }
 
-            showToast('Bill #' + billId + ' marked as PAID.', 'success');
+            const updatedBill = await response.json();
+            const statusLabel = updatedBill && updatedBill.status ? updatedBill.status : 'PAID';
+            showToast('Bill #' + billId + ' marked as ' + statusLabel + '.', 'success');
             await loadBills();
 
         } catch (err) {
@@ -1116,6 +1233,7 @@ separator + '\n';
         const payload = {
             residentId:          parseInt(document.getElementById('billResidentId').value.trim()),
             billMonth:           document.getElementById('billMonth').value.trim(),
+            dueDate:             document.getElementById('billDueDate').value.trim(),
             maintenanceAmount:   parseFloat(document.getElementById('maintenanceAmount').value.trim()),
             electricityAmount:   parseFloat(document.getElementById('electricityAmount').value.trim())
             // totalAmount and status are intentionally omitted — backend calculates them
